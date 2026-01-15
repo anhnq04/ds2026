@@ -1,0 +1,302 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+% Python code configuration
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    captionpos=b
+}
+
+\title{\textbf{PRACTICAL WORK 4} \\ 
+       \Large Word Count with MapReduce}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Objective}
+Implement the classic Word Count example using MapReduce paradigm:
+\begin{itemize}
+    \item Create a custom MapReduce framework in Python
+    \item Implement Mapper and Reducer for word counting
+    \item Use parallel processing with multiprocessing
+    \item Count word occurrences in large text files
+\end{itemize}
+
+\section{Why Python MapReduce?}
+
+\subsection{Framework Choice}
+I chose to implement a custom MapReduce framework in Python using \texttt{multiprocessing} because:
+
+\begin{itemize}
+    \item \textbf{Simplicity}: Python is concise and easy to understand
+    \item \textbf{No External Dependencies}: Uses only Python standard library
+    \item \textbf{Educational Value}: Building from scratch helps understand MapReduce internals
+    \item \textbf{Flexibility}: Full control over implementation details
+    \item \textbf{Parallel Processing}: \texttt{multiprocessing.Pool} provides true parallelism
+    \item \textbf{Lightweight}: No need for Hadoop/Spark setup
+\end{itemize}
+
+\subsection{Alternatives Considered}
+\begin{itemize}
+    \item \textbf{Apache Hadoop}: Too heavy for simple tasks, requires Java
+    \item \textbf{Apache Spark}: Better than Hadoop but still requires setup
+    \item \textbf{mrjob}: Python library but adds dependency
+    \item \textbf{Custom C++}: Higher performance but more complex
+\end{itemize}
+
+\section{MapReduce Architecture}
+
+\subsection{Overall Workflow}
+
+\begin{enumerate}
+    \item \textbf{Input}: Read text file line by line
+    \item \textbf{Map Phase}: Process each line in parallel
+        \begin{itemize}
+            \item Extract words using regex
+            \item Emit (word, 1) pairs
+        \end{itemize}
+    \item \textbf{Shuffle \& Sort}: Group all values by key
+        \begin{itemize}
+            \item Collect all counts for each word
+            \item Create (word, [1, 1, 1, ...]) pairs
+        \end{itemize}
+    \item \textbf{Reduce Phase}: Sum counts in parallel
+        \begin{itemize}
+            \item Sum all values for each key
+            \item Emit (word, total\_count)
+        \end{itemize}
+    \item \textbf{Output}: Display sorted results
+\end{enumerate}
+
+\subsection{Parallelization Strategy}
+
+\begin{itemize}
+    \item \textbf{Map Parallelism}: Each line processed by different worker
+    \item \textbf{Reduce Parallelism}: Each word's counts summed by different worker
+    \item \textbf{Worker Pool}: Fixed number of workers (default: 4)
+    \item \textbf{Load Balancing}: Automatic by \texttt{multiprocessing.Pool}
+\end{itemize}
+
+\section{Implementation}
+
+\subsection{Complete Code}
+
+\lstinputlisting[caption=wordcount.py]{wordcount.py}
+
+\subsection{Mapper Function}
+
+\begin{lstlisting}[caption=Mapper Implementation]
+def mapper(line):
+    """Map function: emit (word, 1) for each word in line"""
+    words = re.findall(r'\b\w+\b', line.lower())
+    return [(word, 1) for word in words]
+\end{lstlisting}
+
+\textbf{Explanation}:
+\begin{itemize}
+    \item \textbf{Input}: One line of text
+    \item \textbf{Process}: 
+        \begin{itemize}
+            \item Convert to lowercase for case-insensitive counting
+            \item Extract words using regex \texttt{\textbackslash b\textbackslash w+\textbackslash b}
+            \item Emit (word, 1) for each word found
+        \end{itemize}
+    \item \textbf{Output}: List of (word, 1) tuples
+\end{itemize}
+
+\subsection{Reducer Function}
+
+\begin{lstlisting}[caption=Reducer Implementation]
+def reducer(word_counts):
+    """Reduce function: sum all counts for a word"""
+    word, counts = word_counts
+    return (word, sum(counts))
+\end{lstlisting}
+
+\textbf{Explanation}:
+\begin{itemize}
+    \item \textbf{Input}: (word, [count1, count2, ...])
+    \item \textbf{Process}: Sum all counts
+    \item \textbf{Output}: (word, total\_count)
+\end{itemize}
+
+\subsection{Shuffle \& Sort Phase}
+
+\begin{lstlisting}[caption=Shuffle Implementation]
+shuffled = defaultdict(list)
+for word, count in flat_mapped:
+    shuffled[word].append(count)
+\end{lstlisting}
+
+\textbf{Explanation}:
+\begin{itemize}
+    \item Groups all (word, 1) pairs by word
+    \item Creates (word, [1, 1, 1, ...]) structure
+    \item Uses \texttt{defaultdict} for automatic list creation
+\end{itemize}
+
+\section{User Guide}
+
+\subsection{System Requirements}
+\begin{itemize}
+    \item Python 3.x
+    \item multiprocessing module (built-in)
+    \item collections module (built-in)
+    \item re module (built-in)
+\end{itemize}
+
+\subsection{How to Run}
+
+\textbf{Basic Usage}:
+\begin{verbatim}
+cd ds2026/Lab4
+python wordcount.py input.txt
+\end{verbatim}
+
+\textbf{Expected Output}:
+\begin{verbatim}
+Word Count Results:
+----------------------------------------
+swiss: 5
+witch: 4
+watch: 4
+three: 3
+...
+\end{verbatim}
+
+\section{Experimental Results}
+
+\subsection{Test Case: Tongue Twister}
+
+\textbf{Input} (input.txt):
+\begin{verbatim}
+three witches watch three swatch watches
+which witch watches which swatch watch
+three swiss switch bitches which wished to be 
+switched swiss witch bitches watch three swiss 
+swatch watch switches which swiss switch bitch
+which wishes to be a switched witch bitch wishes 
+to watch which swiss swatch watch switch
+\end{verbatim}
+
+\textbf{Results}:
+\begin{verbatim}
+swiss: 5
+witch: 4
+watch: 4
+swatch: 4
+which: 4
+three: 3
+bitches: 2
+switched: 2
+...
+\end{verbatim}
+
+\section{Who Does What}
+
+\subsection{Main Process Responsibilities}
+\begin{itemize}
+    \item Read input file
+    \item Create worker pool
+    \item Distribute work to mappers
+    \item Collect and shuffle results
+    \item Distribute work to reducers
+    \item Sort and display final results
+\end{itemize}
+
+\subsection{Mapper Workers}
+\begin{itemize}
+    \item Receive one line of text
+    \item Extract words using regex
+    \item Emit (word, 1) pairs
+    \item Return results to main process
+\end{itemize}
+
+\subsection{Reducer Workers}
+\begin{itemize}
+    \item Receive (word, [counts]) pair
+    \item Sum all counts
+    \item Return (word, total) to main process
+\end{itemize}
+
+\subsection{Python Multiprocessing Framework}
+\begin{itemize}
+    \item Manage worker processes
+    \item Handle inter-process communication
+    \item Load balance work distribution
+    \item Synchronize results collection
+\end{itemize}
+
+\section{Conclusion}
+
+\subsection{Advantages}
+\begin{itemize}
+    \item \textbf{Simple Implementation}: ~60 lines of Python code
+    \item \textbf{True Parallelism}: Uses multiple CPU cores
+    \item \textbf{No Dependencies}: Only standard library
+    \item \textbf{Scalable}: Can adjust number of workers
+    \item \textbf{Educational}: Clear demonstration of MapReduce concepts
+\end{itemize}
+
+\subsection{Limitations}
+\begin{itemize}
+    \item \textbf{Single Machine}: Cannot distribute across cluster
+    \item \textbf{Memory Bound}: All data must fit in memory
+    \item \textbf{No Fault Tolerance}: Process crash = job failure
+    \item \textbf{Limited Scalability}: Bounded by CPU cores
+\end{itemize}
+
+\subsection{Lessons Learned}
+\begin{itemize}
+    \item Understanding MapReduce paradigm deeply
+    \item Implementing parallel processing in Python
+    \item Trade-offs between simplicity and scalability
+    \item Importance of shuffle/sort phase
+    \item How to decompose problems into map/reduce operations
+\end{itemize}
+
+\subsection{Performance Analysis}
+
+For a file with N lines and W workers:
+\begin{itemize}
+    \item \textbf{Map Phase}: O(N/W) - parallel speedup
+    \item \textbf{Shuffle Phase}: O(N) - sequential bottleneck
+    \item \textbf{Reduce Phase}: O(K/W) where K = unique words
+    \item \textbf{Overall}: O(N + K/W) - good for large N
+\end{itemize}
+
+\subsection{Future Enhancements}
+\begin{itemize}
+    \item Add combiner function to reduce shuffle overhead
+    \item Implement distributed version using network sockets
+    \item Add progress reporting
+    \item Support for multiple input files
+    \item Implement partitioner for better load balancing
+    \item Add fault tolerance with task retry
+    \item Support streaming input for very large files
+\end{itemize}
+
+\end{document}

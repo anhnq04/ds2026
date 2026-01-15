@@ -1,0 +1,249 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=single,
+    breaklines=true
+}
+
+\title{\textbf{PRACTICAL WORK 7} \\ 
+       \Large Sudoku Game on Google App Engine}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Objective}
+Create and deploy a Sudoku game on Google App Engine:
+\begin{itemize}
+    \item Build a web-based Sudoku game
+    \item Implement game logic (generator and validator)
+    \item Deploy to Google App Engine
+    \item Create responsive UI
+\end{itemize}
+
+\section{Project Structure}
+
+\subsection{File Organization}
+\begin{verbatim}
+Lab7/
+├── main.py              # Flask application
+├── app.yaml             # GAE configuration
+├── requirements.txt     # Python dependencies
+└── templates/
+    └── index.html       # Game UI
+\end{verbatim}
+
+\subsection{Technology Stack}
+\begin{itemize}
+    \item \textbf{Backend}: Python Flask
+    \item \textbf{Frontend}: HTML, CSS, JavaScript
+    \item \textbf{Platform}: Google App Engine
+    \item \textbf{Runtime}: Python 3.9
+\end{itemize}
+
+\section{Implementation}
+
+\subsection{Backend - Flask Application}
+
+\subsubsection{Sudoku Generator}
+\begin{lstlisting}
+class SudokuGenerator:
+    def __init__(self):
+        self.board = [[0]*9 for _ in range(9)]
+    
+    def is_valid(self, row, col, num):
+        # Check row, column, and 3x3 box
+        # Return True if placement is valid
+        
+    def solve(self):
+        # Backtracking algorithm to fill board
+        
+    def generate(self, difficulty=40):
+        # Generate complete board
+        # Remove cells based on difficulty
+        return self.board
+\end{lstlisting}
+
+\subsubsection{API Endpoints}
+\begin{itemize}
+    \item \texttt{GET /}: Serve game UI
+    \item \texttt{POST /generate}: Generate new puzzle
+    \item \texttt{POST /validate}: Validate current board
+\end{itemize}
+
+\subsection{Frontend - Game UI}
+
+\subsubsection{Features}
+\begin{itemize}
+    \item 9x9 Sudoku grid
+    \item Difficulty selection (Easy, Medium, Hard)
+    \item New Game button
+    \item Validate button
+    \item Clear button
+    \item Visual feedback for fixed cells
+\end{itemize}
+
+\subsubsection{Design}
+\begin{itemize}
+    \item Modern gradient background
+    \item Responsive layout
+    \item Smooth animations
+    \item Color-coded cells (fixed vs editable)
+    \item Success/error messages
+\end{itemize}
+
+\section{Deployment to GAE}
+
+\subsection{Prerequisites}
+\begin{verbatim}
+# Install Google Cloud SDK
+curl https://sdk.cloud.google.com | bash
+exec -l $SHELL
+
+# Initialize gcloud
+gcloud init
+
+# Create new project
+gcloud projects create sudoku-game-PROJECT_ID
+gcloud config set project sudoku-game-PROJECT_ID
+\end{verbatim}
+
+\subsection{Deploy Application}
+\begin{verbatim}
+# Install dependencies locally (optional)
+pip install -r requirements.txt
+
+# Deploy to GAE
+gcloud app deploy
+
+# View application
+gcloud app browse
+\end{verbatim}
+
+\subsection{GAE Configuration (app.yaml)}
+\begin{verbatim}
+runtime: python39
+entrypoint: gunicorn -b :$PORT main:app
+
+instance_class: F1
+
+automatic_scaling:
+  target_cpu_utilization: 0.65
+  min_instances: 1
+  max_instances: 10
+\end{verbatim}
+
+\section{Important Code Snippets}
+
+\subsection{Sudoku Validation Logic}
+\begin{lstlisting}
+def is_valid(self, row, col, num):
+    # Check row
+    if num in self.board[row]:
+        return False
+    
+    # Check column
+    if num in [self.board[i][col] for i in range(9)]:
+        return False
+    
+    # Check 3x3 box
+    box_row, box_col = 3 * (row // 3), 3 * (col // 3)
+    for i in range(box_row, box_row + 3):
+        for j in range(box_col, box_col + 3):
+            if self.board[i][j] == num:
+                return False
+    return True
+\end{lstlisting}
+
+\subsection{Board Generation}
+\begin{lstlisting}
+def generate(self, difficulty=40):
+    # Generate complete board using backtracking
+    self.solve()
+    
+    # Remove cells based on difficulty
+    cells = [(i, j) for i in range(9) for j in range(9)]
+    random.shuffle(cells)
+    
+    for i, j in cells[:difficulty]:
+        self.board[i][j] = 0
+    
+    return self.board
+\end{lstlisting}
+
+\section{Who Does What}
+
+\subsection{Flask Backend}
+\begin{itemize}
+    \item Generate Sudoku puzzles
+    \item Validate board state
+    \item Serve HTML templates
+    \item Handle API requests
+\end{itemize}
+
+\subsection{JavaScript Frontend}
+\begin{itemize}
+    \item Render game board
+    \item Handle user input
+    \item Make API calls
+    \item Update UI dynamically
+\end{itemize}
+
+\subsection{Google App Engine}
+\begin{itemize}
+    \item Host application
+    \item Auto-scaling
+    \item Load balancing
+    \item SSL/HTTPS
+    \item Global CDN
+\end{itemize}
+
+\section{Conclusion}
+
+\subsection{Advantages of GAE}
+\begin{itemize}
+    \item \textbf{Zero Server Management}: Fully managed platform
+    \item \textbf{Auto-scaling}: Handles traffic spikes automatically
+    \item \textbf{Global}: Deploy to multiple regions
+    \item \textbf{Integrated}: Works with other Google Cloud services
+    \item \textbf{Free Tier}: Generous free quota for small apps
+\end{itemize}
+
+\subsection{Game Features}
+\begin{itemize}
+    \item Three difficulty levels
+    \item Automatic puzzle generation
+    \item Real-time validation
+    \item Clean, modern UI
+    \item Mobile-responsive
+\end{itemize}
+
+\subsection{Lessons Learned}
+\begin{itemize}
+    \item Building web applications with Flask
+    \item Deploying to cloud platforms
+    \item Implementing game logic algorithms
+    \item Creating responsive UIs
+    \item Working with GAE constraints
+\end{itemize}
+
+\end{document}

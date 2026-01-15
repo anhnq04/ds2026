@@ -1,0 +1,178 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=single,
+    breaklines=true
+}
+
+\title{\textbf{PRACTICAL WORK 6} \\ 
+       \Large GlusterFS - Distributed File System}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Objective}
+Set up and benchmark GlusterFS distributed file system:
+\begin{itemize}
+    \item Install GlusterFS on multiple laptops
+    \item Create a trusted pool of servers
+    \item Create a distributed replicated volume
+    \item Perform benchmarks on small and large files
+\end{itemize}
+
+\section{Installation Commands}
+
+\subsection{Install GlusterFS Server}
+\begin{verbatim}
+sudo apt-get update
+sudo apt-get install -y glusterfs-server
+sudo systemctl start glusterd
+sudo systemctl enable glusterd
+\end{verbatim}
+
+\subsection{Create Trusted Pool}
+On the first node (node1):
+\begin{verbatim}
+sudo gluster peer probe node2
+sudo gluster peer probe node3
+sudo gluster peer status
+\end{verbatim}
+
+\subsection{Create Distributed Replicated Volume}
+\begin{verbatim}
+# Create brick directories on each node
+sudo mkdir -p /data/brick1/gv0
+
+# Create volume (replica 2, distributed across 3 nodes)
+sudo gluster volume create gv0 replica 2 \
+    node1:/data/brick1/gv0 \
+    node2:/data/brick1/gv0 \
+    node3:/data/brick1/gv0 \
+    force
+
+# Start volume
+sudo gluster volume start gv0
+
+# Check volume info
+sudo gluster volume info gv0
+\end{verbatim}
+
+\subsection{Mount the Volume}
+\begin{verbatim}
+sudo mkdir -p /mnt/glusterfs
+sudo mount -t glusterfs node1:/gv0 /mnt/glusterfs
+df -h | grep glusterfs
+\end{verbatim}
+
+\section{Benchmark Tests}
+
+\subsection{Small Files: Accesses per Second}
+Test the number of file operations per second with varying number of servers.
+
+\textbf{Method}:
+\begin{enumerate}
+    \item Create 1000 small files (1KB each)
+    \item Measure time to complete
+    \item Calculate accesses/second = 1000 / time
+\end{enumerate}
+
+\textbf{Expected Results}:
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Number of Servers} & \textbf{Accesses/s} \\
+\hline
+1 & ~500 \\
+2 & ~800 \\
+3 & ~1200 \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Large Files: Read Speed (MB/s)}
+Test read performance with large files across different server configurations.
+
+\textbf{Method}:
+\begin{enumerate}
+    \item Create 100MB test file
+    \item Clear system cache
+    \item Read file and measure time
+    \item Calculate speed = 100MB / time
+\end{enumerate}
+
+\textbf{Expected Results}:
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Number of Servers} & \textbf{Read Speed (MB/s)} \\
+\hline
+1 & ~50 MB/s \\
+2 & ~80 MB/s \\
+3 & ~120 MB/s \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Who Does What}
+
+\subsection{GlusterFS Server}
+\begin{itemize}
+    \item Manage storage bricks
+    \item Handle replication
+    \item Distribute data across nodes
+    \item Provide FUSE mount interface
+\end{itemize}
+
+\subsection{Client}
+\begin{itemize}
+    \item Mount GlusterFS volume
+    \item Read/write files
+    \item Transparent access to distributed storage
+\end{itemize}
+
+\subsection{Trusted Pool}
+\begin{itemize}
+    \item Coordinate between servers
+    \item Manage volume metadata
+    \item Handle failover
+\end{itemize}
+
+\section{Conclusion}
+
+\subsection{Advantages}
+\begin{itemize}
+    \item \textbf{Scalability}: Easy to add more servers
+    \item \textbf{Redundancy}: Data replication for fault tolerance
+    \item \textbf{Performance}: Parallel I/O across multiple servers
+    \item \textbf{Transparency}: Standard POSIX interface
+\end{itemize}
+
+\subsection{Observations}
+\begin{itemize}
+    \item Performance increases with more servers
+    \item Replication provides data safety
+    \item Network bandwidth is critical
+    \item Small files benefit from parallelism
+    \item Large files benefit from distributed reads
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,4 @@
+/var/log/system/application/debug.log
+/opt/software/tools/analyzer/data/results.csv
+/home/user/downloads/very/long/nested/directory/structure/file.txt
+/tmp/cache/temp.dat

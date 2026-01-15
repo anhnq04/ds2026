@@ -1,0 +1,219 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+% Python code configuration
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    captionpos=b
+}
+
+\title{\textbf{PRACTICAL WORK 1} \\ 
+       \Large TCP File Transfer}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Objective}
+Build a 1-to-1 file transfer system over TCP/IP using socket in Python, including:
+\begin{itemize}
+    \item One server to receive files
+    \item One client to send files
+    \item Using socket for data transmission
+\end{itemize}
+
+\section{Protocol Design}
+
+\subsection{Workflow Diagram}
+The file transfer protocol is designed as follows:
+
+\begin{enumerate}
+    \item Client establishes TCP connection to Server
+    \item Client sends filename (text format, UTF-8 encoding)
+    \item Client sends file content in chunks (4096 bytes)
+    \item Client sends end-of-file signal "EOF"
+    \item Server saves the file and closes connection
+\end{enumerate}
+
+\subsection{Technical Specifications}
+\begin{itemize}
+    \item \textbf{Protocol}: TCP/IP
+    \item \textbf{Port}: 5000
+    \item \textbf{Host}: 0.0.0.0 (Server), 127.0.0.1 (Client)
+    \item \textbf{Buffer size}: 4096 bytes
+    \item \textbf{Encoding}: UTF-8 (filename), Binary (file content)
+\end{itemize}
+
+\section{System Organization}
+
+\subsection{Directory Structure}
+\begin{verbatim}
+Lab1/
+├── server.py                    # File receiving server
+├── client.py                    # File sending client
+├── test.txt                     # Test file
+└── 01.tcp.file.transfer.tex     # LaTeX report
+\end{verbatim}
+
+\subsection{System Architecture}
+The system uses a simple Client-Server model:
+\begin{itemize}
+    \item \textbf{Server}: Listens for connections, receives files and saves to disk
+    \item \textbf{Client}: Connects to server, reads file from disk and sends over network
+\end{itemize}
+
+\section{Implementation}
+
+\subsection{Server Code}
+File \texttt{server.py} implements the file receiving functionality:
+
+\lstinputlisting[caption=server.py]{server.py}
+
+\subsubsection{Server Code Explanation}
+\begin{itemize}
+    \item \textbf{Lines 1-2}: Import socket and os libraries
+    \item \textbf{Lines 4-6}: Configure HOST, PORT and BUFFER size
+    \item \textbf{Lines 8-10}: Create socket, bind address and listen
+    \item \textbf{Lines 12-13}: Accept connection from client
+    \item \textbf{Lines 15-17}: Receive filename from client
+    \item \textbf{Lines 19-24}: Receive file content in chunks and save to disk
+    \item \textbf{Lines 26-28}: Display success message and close connection
+\end{itemize}
+
+\subsection{Client Code}
+File \texttt{client.py} implements the file sending functionality:
+
+\lstinputlisting[caption=client.py]{client.py}
+
+\subsubsection{Client Code Explanation}
+\begin{itemize}
+    \item \textbf{Lines 1-2}: Import socket and os libraries
+    \item \textbf{Lines 4-6}: Configure HOST, PORT and BUFFER size
+    \item \textbf{Line 8}: Get filename input from user
+    \item \textbf{Lines 10-12}: Check if file exists
+    \item \textbf{Lines 14-15}: Create socket and connect to server
+    \item \textbf{Lines 17-18}: Send filename
+    \item \textbf{Lines 20-25}: Read and send file content in chunks
+    \item \textbf{Lines 27-29}: Send EOF signal and close connection
+\end{itemize}
+
+\section{User Guide}
+
+\subsection{System Requirements}
+\begin{itemize}
+    \item Python 3.x
+    \item socket module (built-in)
+    \item os module (built-in)
+\end{itemize}
+
+\subsection{How to Run}
+
+\textbf{Step 1}: Open first terminal, run Server:
+\begin{verbatim}
+cd Lab1
+python server.py
+\end{verbatim}
+
+\textbf{Step 2}: Open second terminal, run Client:
+\begin{verbatim}
+cd Lab1
+python client.py
+\end{verbatim}
+
+\textbf{Step 3}: Enter the filename to send (e.g., \texttt{test.txt})
+
+\subsection{Expected Results}
+\begin{itemize}
+    \item Server displays: "Receiving: test.txt" and "File test.txt received successfully!"
+    \item Client displays: "File test.txt sent successfully!"
+    \item File is created in the Server directory
+\end{itemize}
+
+\section{Experimental Results}
+
+\subsection{Test Case 1: Sending Text File}
+\begin{itemize}
+    \item \textbf{Input}: test.txt (regular text file)
+    \item \textbf{Result}: Success
+    \item \textbf{Observation}: File transferred completely, content is accurate
+\end{itemize}
+
+\subsection{Test Case 2: Non-existent File}
+\begin{itemize}
+    \item \textbf{Input}: nonexistent.txt
+    \item \textbf{Result}: Client shows error "File not found!"
+    \item \textbf{Observation}: Error handling works correctly
+\end{itemize}
+
+\subsection{Test Case 3: Binary File Transfer}
+\begin{itemize}
+    \item \textbf{Input}: image.png (binary file)
+    \item \textbf{Result}: Success
+    \item \textbf{Observation}: Binary files are transferred correctly without corruption
+\end{itemize}
+
+\section{Conclusion}
+
+\subsection{Advantages}
+\begin{itemize}
+    \item Concise and easy-to-understand code (~30 lines per file)
+    \item Uses TCP to ensure reliable data transmission
+    \item Handles binary files correctly
+    \item Includes basic error checking
+    \item Simple implementation suitable for learning purposes
+\end{itemize}
+
+\subsection{Limitations and Future Improvements}
+\begin{itemize}
+    \item Only supports one client at a time
+    \item No progress bar for large file transfers
+    \item No data encryption
+    \item No client authentication
+    \item No resume capability for interrupted transfers
+    \item No file integrity verification (checksum)
+\end{itemize}
+
+\subsection{Lessons Learned}
+\begin{itemize}
+    \item Understanding TCP socket operations
+    \item Learning file transfer over network
+    \item Grasping basic client-server architecture
+    \item Handling binary data in Python
+    \item Importance of proper error handling
+\end{itemize}
+
+\subsection{Future Enhancements}
+To make this system production-ready, the following features could be added:
+\begin{itemize}
+    \item Multi-threaded server to handle multiple clients
+    \item SSL/TLS encryption for secure transmission
+    \item Authentication mechanism
+    \item Progress bar and transfer speed indicator
+    \item File compression before transfer
+    \item MD5/SHA256 checksum verification
+    \item Resume interrupted transfers
+\end{itemize}
+
+\end{document}

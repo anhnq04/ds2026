@@ -1,0 +1,355 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+% Python code configuration
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    captionpos=b
+}
+
+\title{\textbf{PRACTICAL WORK 3} \\ 
+       \Large MPI File Transfer}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Objective}
+Upgrade the TCP file transfer system from Lab 1 to use MPI (Message Passing Interface):
+\begin{itemize}
+    \item Copy TCP file transfer system to MPI directory
+    \item Upgrade to MPI-based file transfer
+    \item Use mpi4py implementation
+    \item Enable parallel processing and inter-process communication
+\end{itemize}
+
+\section{Why MPI?}
+
+\subsection{What is MPI?}
+Message Passing Interface (MPI) is a standardized and portable message-passing system designed for parallel computing. It enables multiple processes to communicate and coordinate their work.
+
+\subsection{Why Choose mpi4py?}
+\begin{itemize}
+    \item \textbf{Python Integration}: Native Python bindings for MPI
+    \item \textbf{Standard Compliance}: Implements MPI-2 and MPI-3 standards
+    \item \textbf{High Performance}: Near C-level performance for large data transfers
+    \item \textbf{Easy to Use}: Pythonic API with pickle support for Python objects
+    \item \textbf{Widely Used}: Industry standard for HPC (High Performance Computing)
+    \item \textbf{Scalable}: Can run on single machine or across clusters
+\end{itemize}
+
+\subsection{MPI vs RPC vs TCP}
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Aspect} & \textbf{TCP} & \textbf{RPC} & \textbf{MPI} \\
+\hline
+Paradigm & Client-Server & Client-Server & Peer-to-Peer \\
+Processes & 2 (1 server, 1 client) & 2 (1 server, 1 client) & N (all equal) \\
+Communication & Socket & HTTP/XML & Direct message passing \\
+Performance & Good & Moderate & Excellent \\
+Scalability & Limited & Limited & High \\
+Use Case & Network apps & Web services & HPC/Scientific \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{MPI Service Design}
+
+\subsection{Process Roles}
+In our implementation:
+\begin{itemize}
+    \item \textbf{Rank 0 (Master)}: Reads file from disk and sends to rank 1
+    \item \textbf{Rank 1 (Worker)}: Receives file and saves to disk
+\end{itemize}
+
+Note: Unlike client-server, all MPI processes are peers. We assign roles based on rank.
+
+\subsection{Communication Pattern}
+\begin{enumerate}
+    \item Launch 2 MPI processes using \texttt{mpiexec}
+    \item Rank 0 reads filename from command line
+    \item Rank 0 reads file content into memory
+    \item Rank 0 sends dictionary \{filename, data\} to rank 1 using \texttt{comm.send()}
+    \item Rank 1 receives message using \texttt{comm.recv()}
+    \item Rank 1 saves file with prefix "received\_"
+    \item Both processes print status messages
+\end{enumerate}
+
+\subsection{Technical Specifications}
+\begin{itemize}
+    \item \textbf{MPI Implementation}: MPICH or OpenMPI
+    \item \textbf{Python Library}: mpi4py
+    \item \textbf{Number of Processes}: 2
+    \item \textbf{Communication}: Point-to-point (send/recv)
+    \item \textbf{Data Serialization}: Pickle (automatic)
+    \item \textbf{Transport}: Shared memory or network (MPI decides)
+\end{itemize}
+
+\section{System Organization}
+
+\subsection{Directory Structure}
+\begin{verbatim}
+Lab3/
+├── transfer.py                # MPI file transfer program
+├── test.txt                   # Test file
+├── README.md                  # Installation guide
+└── 03.mpi.file.transfer.tex   # LaTeX report
+\end{verbatim}
+
+\subsection{System Architecture}
+\begin{itemize}
+    \item \textbf{Single Program, Multiple Data (SPMD)}: Same code runs on all processes
+    \item \textbf{Rank-based Logic}: Different behavior based on process rank
+    \item \textbf{MPI Communicator}: \texttt{MPI.COMM\_WORLD} manages all processes
+    \item \textbf{Automatic Serialization}: mpi4py handles Python object serialization
+\end{itemize}
+
+\section{Implementation}
+
+\subsection{MPI Transfer Code}
+File \texttt{transfer.py} implements the MPI file transfer:
+
+\lstinputlisting[caption=transfer.py]{transfer.py}
+
+\subsection{Code Explanation}
+
+\subsubsection{Initialization (Lines 1-6)}
+\begin{itemize}
+    \item \textbf{Line 1}: Import mpi4py MPI module
+    \item \textbf{Line 4}: Get MPI communicator (all processes)
+    \item \textbf{Line 5}: Get process rank (0, 1, 2, ...)
+    \item \textbf{Line 6}: Get total number of processes
+\end{itemize}
+
+\subsubsection{Master Process - Rank 0 (Lines 8-23)}
+\begin{itemize}
+    \item \textbf{Lines 9-12}: Check command line arguments
+    \item \textbf{Lines 15-17}: Read file content
+    \item \textbf{Line 18}: Print sending status
+    \item \textbf{Line 19}: Send dictionary to rank 1 using MPI
+    \item \textbf{Lines 21-23}: Handle file not found error
+\end{itemize}
+
+\subsubsection{Worker Process - Rank 1 (Lines 24-35)}
+\begin{itemize}
+    \item \textbf{Line 26}: Receive message from rank 0
+    \item \textbf{Lines 27-32}: Extract data and save file
+    \item \textbf{Line 30}: Save with "received\_" prefix
+    \item \textbf{Line 32}: Print success message
+\end{itemize}
+
+\subsection{Key MPI Concepts Used}
+\begin{itemize}
+    \item \textbf{Communicator}: \texttt{MPI.COMM\_WORLD} - group of all processes
+    \item \textbf{Rank}: Unique ID for each process (0 to size-1)
+    \item \textbf{Point-to-point}: \texttt{send()} and \texttt{recv()} for direct communication
+    \item \textbf{Pickle Protocol}: Automatic serialization of Python objects
+\end{itemize}
+
+\section{User Guide}
+
+\subsection{System Requirements}
+\begin{itemize}
+    \item Python 3.x
+    \item MPI implementation (MPICH or OpenMPI)
+    \item mpi4py library
+\end{itemize}
+
+\subsection{Installation}
+
+\textbf{Ubuntu/Debian}:
+\begin{verbatim}
+sudo apt-get update
+sudo apt-get install mpich
+pip install mpi4py
+\end{verbatim}
+
+\textbf{Or using OpenMPI}:
+\begin{verbatim}
+sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev
+pip install mpi4py
+\end{verbatim}
+
+\subsection{How to Run}
+
+\textbf{Basic Usage}:
+\begin{verbatim}
+cd ds2026/Lab3
+mpiexec -n 2 python transfer.py test.txt
+\end{verbatim}
+
+\textbf{Parameters}:
+\begin{itemize}
+    \item \texttt{-n 2}: Launch 2 processes
+    \item \texttt{test.txt}: File to transfer
+\end{itemize}
+
+\subsection{Expected Results}
+\begin{verbatim}
+[Rank 0] Sending file: test.txt (123 bytes)
+[Rank 0] File sent successfully!
+[Rank 1] File received and saved as: received_test.txt (123 bytes)
+\end{verbatim}
+
+\section{Experimental Results}
+
+\subsection{Test Case 1: Text File Transfer}
+\begin{itemize}
+    \item \textbf{Input}: test.txt (text file)
+    \item \textbf{Command}: \texttt{mpiexec -n 2 python transfer.py test.txt}
+    \item \textbf{Result}: Success
+    \item \textbf{Observation}: File transferred via MPI message passing
+\end{itemize}
+
+\subsection{Test Case 2: Binary File Transfer}
+\begin{itemize}
+    \item \textbf{Input}: image.png (binary file)
+    \item \textbf{Command}: \texttt{mpiexec -n 2 python transfer.py image.png}
+    \item \textbf{Result}: Success
+    \item \textbf{Observation}: Binary data preserved correctly
+\end{itemize}
+
+\subsection{Test Case 3: Large File Transfer}
+\begin{itemize}
+    \item \textbf{Input}: large.zip (50MB)
+    \item \textbf{Result}: Success
+    \item \textbf{Observation}: MPI handles large messages efficiently
+\end{itemize}
+
+\subsection{Test Case 4: Non-existent File}
+\begin{itemize}
+    \item \textbf{Input}: nonexistent.txt
+    \item \textbf{Result}: Error message displayed
+    \item \textbf{Observation}: Proper error handling
+\end{itemize}
+
+\section{Who Does What}
+
+\subsection{Rank 0 (Master) Responsibilities}
+\begin{itemize}
+    \item Parse command line arguments
+    \item Read file from filesystem
+    \item Package data into dictionary
+    \item Send message to rank 1
+    \item Handle file not found errors
+    \item Print status messages
+\end{itemize}
+
+\subsection{Rank 1 (Worker) Responsibilities}
+\begin{itemize}
+    \item Wait for message from rank 0
+    \item Receive and unpack data
+    \item Save file to disk with new name
+    \item Print confirmation message
+\end{itemize}
+
+\subsection{MPI Runtime Responsibilities}
+\begin{itemize}
+    \item Launch multiple processes
+    \item Establish communication channels
+    \item Serialize/deserialize Python objects
+    \item Route messages between processes
+    \item Synchronize process execution
+    \item Clean up resources on exit
+\end{itemize}
+
+\section{Conclusion}
+
+\subsection{Advantages of MPI Approach}
+\begin{itemize}
+    \item \textbf{High Performance}: Optimized for parallel computing
+    \item \textbf{Scalability}: Can scale to thousands of processes
+    \item \textbf{Flexibility}: Supports various communication patterns
+    \item \textbf{Standard}: Industry standard for HPC
+    \item \textbf{Automatic Optimization}: MPI chooses best transport (shared memory vs network)
+    \item \textbf{Peer-to-Peer}: No client-server bottleneck
+\end{itemize}
+
+\subsection{Disadvantages of MPI Approach}
+\begin{itemize}
+    \item \textbf{Complex Setup}: Requires MPI installation
+    \item \textbf{Learning Curve}: MPI concepts are more complex
+    \item \textbf{Overkill for Simple Tasks}: Too powerful for basic file transfer
+    \item \textbf{Process Management}: Must manage multiple processes
+    \item \textbf{Debugging}: Harder to debug parallel programs
+\end{itemize}
+
+\subsection{Lessons Learned}
+\begin{itemize}
+    \item Understanding MPI fundamentals (rank, communicator, send/recv)
+    \item Learning parallel programming concepts
+    \item Comparing different communication paradigms
+    \item Using mpi4py for Python parallel computing
+    \item Appreciating trade-offs between simplicity and performance
+\end{itemize}
+
+\subsection{Comparison Summary}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Feature} & \textbf{TCP} & \textbf{RPC} & \textbf{MPI} \\
+\hline
+Code Complexity & Medium & Low & Medium \\
+Setup Complexity & Low & Low & High \\
+Performance & Good & Moderate & Excellent \\
+Scalability & 2 nodes & 2 nodes & N nodes \\
+Best For & Networks & Web services & HPC \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{When to Use MPI}
+\begin{itemize}
+    \item \textbf{Use MPI when}:
+        \begin{itemize}
+            \item Building HPC applications
+            \item Need to scale to many processes
+            \item Require maximum performance
+            \item Working in scientific computing
+            \item Have complex parallel algorithms
+        \end{itemize}
+    \item \textbf{Don't use MPI when}:
+        \begin{itemize}
+            \item Building simple client-server apps
+            \item Users don't have MPI installed
+            \item Only need 2 processes
+            \item Web-based applications
+        \end{itemize}
+\end{itemize}
+
+\subsection{Future Enhancements}
+\begin{itemize}
+    \item Implement collective operations (broadcast, scatter, gather)
+    \item Add multiple workers for parallel processing
+    \item Implement file chunking for distributed storage
+    \item Add non-blocking communication for better performance
+    \item Implement fault tolerance and error recovery
+    \item Use MPI-IO for parallel file I/O
+    \item Add performance benchmarking
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,2 @@
+This is a test file for RPC file transfer.
+Testing XML-RPC based file transfer system.

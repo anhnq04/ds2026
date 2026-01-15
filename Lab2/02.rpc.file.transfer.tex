@@ -1,0 +1,323 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+% Python code configuration
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    captionpos=b
+}
+
+\title{\textbf{PRACTICAL WORK 2} \\ 
+       \Large RPC File Transfer}
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Objective}
+Upgrade the TCP file transfer system from Lab 1 to use RPC (Remote Procedure Call):
+\begin{itemize}
+    \item Copy TCP file transfer system to RPC directory
+    \item Upgrade to RPC-based file transfer
+    \item Use XML-RPC service (Python built-in)
+    \item Maintain file transfer functionality with higher abstraction
+\end{itemize}
+
+\section{RPC Service Design}
+
+\subsection{What is RPC?}
+Remote Procedure Call (RPC) is a protocol that allows a program to execute procedures on a remote server as if they were local function calls. It abstracts the network communication details from the developer.
+
+\subsection{Why XML-RPC?}
+\begin{itemize}
+    \item \textbf{Built-in}: Available in Python standard library
+    \item \textbf{Simple}: Easy to implement and understand
+    \item \textbf{Cross-platform}: Works across different systems
+    \item \textbf{Language-agnostic}: Can communicate with other languages
+\end{itemize}
+
+\subsection{RPC Service Methods}
+The server exposes one main RPC method:
+
+\begin{verbatim}
+upload_file(filename: str, data: str) -> str
+\end{verbatim}
+
+\begin{itemize}
+    \item \textbf{filename}: Name of the file to save
+    \item \textbf{data}: Base64-encoded file content
+    \item \textbf{Returns}: Success or error message
+\end{itemize}
+
+\subsection{Protocol Workflow}
+\begin{enumerate}
+    \item Client reads file from disk
+    \item Client encodes file content to Base64
+    \item Client calls remote \texttt{upload\_file()} method via XML-RPC
+    \item Server receives RPC call
+    \item Server decodes Base64 data
+    \item Server saves file to disk
+    \item Server returns result message
+    \item Client displays result
+\end{enumerate}
+
+\subsection{Technical Specifications}
+\begin{itemize}
+    \item \textbf{RPC Protocol}: XML-RPC
+    \item \textbf{Transport}: HTTP
+    \item \textbf{Port}: 5000
+    \item \textbf{Host}: 0.0.0.0 (Server), 127.0.0.1 (Client)
+    \item \textbf{Encoding}: Base64 (for binary data)
+    \item \textbf{Data Format}: XML
+\end{itemize}
+
+\section{System Organization}
+
+\subsection{Directory Structure}
+\begin{verbatim}
+Lab2/
+├── server.py                  # RPC server
+├── client.py                  # RPC client
+├── test.txt                   # Test file
+└── 02.rpc.file.transfer.tex   # LaTeX report
+\end{verbatim}
+
+\subsection{System Architecture}
+\begin{itemize}
+    \item \textbf{Server}: Exposes RPC methods, receives and saves files
+    \item \textbf{Client}: Calls remote methods, sends files via RPC
+    \item \textbf{XML-RPC Layer}: Handles serialization, HTTP transport, and method invocation
+\end{itemize}
+
+\subsection{Comparison: TCP vs RPC}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Aspect} & \textbf{TCP (Lab 1)} & \textbf{RPC (Lab 2)} \\
+\hline
+Abstraction & Low-level sockets & High-level function calls \\
+Protocol & Custom binary & XML-RPC over HTTP \\
+Complexity & Manual protocol design & Automatic serialization \\
+Code Length & ~30 lines & ~20 lines \\
+Error Handling & Manual & Built-in \\
+Extensibility & Difficult & Easy to add methods \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Implementation}
+
+\subsection{Server Code}
+File \texttt{server.py} implements the RPC server:
+
+\lstinputlisting[caption=server.py]{server.py}
+
+\subsubsection{Server Code Explanation}
+\begin{itemize}
+    \item \textbf{Lines 1-2}: Import XML-RPC server and base64 modules
+    \item \textbf{Lines 4-5}: Configure HOST and PORT
+    \item \textbf{Lines 7-14}: Define \texttt{upload\_file()} RPC method
+        \begin{itemize}
+            \item Decode Base64 data to binary
+            \item Write to file
+            \item Return success/error message
+        \end{itemize}
+    \item \textbf{Lines 16-19}: Create RPC server, register method, and start serving
+\end{itemize}
+
+\subsection{Client Code}
+File \texttt{client.py} implements the RPC client:
+
+\lstinputlisting[caption=client.py]{client.py}
+
+\subsubsection{Client Code Explanation}
+\begin{itemize}
+    \item \textbf{Lines 1-3}: Import XML-RPC client, base64, and os modules
+    \item \textbf{Lines 5-6}: Configure HOST and PORT
+    \item \textbf{Lines 8-12}: Get filename and check existence
+    \item \textbf{Lines 14-15}: Read file and encode to Base64
+    \item \textbf{Lines 17-19}: Create RPC proxy, call remote method, display result
+\end{itemize}
+
+\subsection{Key Differences from Lab 1}
+\begin{itemize}
+    \item \textbf{No manual socket management}: XML-RPC handles connections
+    \item \textbf{No custom protocol}: Standard XML-RPC protocol
+    \item \textbf{Base64 encoding}: Required for binary data in XML
+    \item \textbf{Single RPC call}: Entire file sent in one method call
+    \item \textbf{Simpler code}: Less boilerplate, more readable
+\end{itemize}
+
+\section{User Guide}
+
+\subsection{System Requirements}
+\begin{itemize}
+    \item Python 3.x
+    \item xmlrpc.server module (built-in)
+    \item xmlrpc.client module (built-in)
+    \item base64 module (built-in)
+\end{itemize}
+
+\subsection{How to Run}
+
+\textbf{Step 1}: Open first terminal, run RPC Server:
+\begin{verbatim}
+cd ds2026/Lab2
+python server.py
+\end{verbatim}
+
+\textbf{Step 2}: Open second terminal, run RPC Client:
+\begin{verbatim}
+cd ds2026/Lab2
+python client.py
+\end{verbatim}
+
+\textbf{Step 3}: Enter the filename to send (e.g., \texttt{test.txt})
+
+\subsection{Expected Results}
+\begin{itemize}
+    \item Server displays: "RPC Server listening on 0.0.0.0:5000"
+    \item Client displays: "File test.txt uploaded successfully!"
+    \item File is created in the Server directory
+\end{itemize}
+
+\section{Experimental Results}
+
+\subsection{Test Case 1: Text File Transfer}
+\begin{itemize}
+    \item \textbf{Input}: test.txt (text file)
+    \item \textbf{Result}: Success
+    \item \textbf{Observation}: File transferred correctly via RPC
+\end{itemize}
+
+\subsection{Test Case 2: Binary File Transfer}
+\begin{itemize}
+    \item \textbf{Input}: image.png (binary file)
+    \item \textbf{Result}: Success
+    \item \textbf{Observation}: Base64 encoding preserves binary data integrity
+\end{itemize}
+
+\subsection{Test Case 3: Large File Transfer}
+\begin{itemize}
+    \item \textbf{Input}: large\_file.zip (10MB)
+    \item \textbf{Result}: Success
+    \item \textbf{Observation}: Single RPC call handles large files, but may have memory overhead
+\end{itemize}
+
+\subsection{Test Case 4: Non-existent File}
+\begin{itemize}
+    \item \textbf{Input}: nonexistent.txt
+    \item \textbf{Result}: Client shows "File not found!"
+    \item \textbf{Observation}: Error handling works correctly
+\end{itemize}
+
+\section{Who Does What}
+
+\subsection{Client Responsibilities}
+\begin{itemize}
+    \item Read file from local filesystem
+    \item Encode file content to Base64
+    \item Create XML-RPC proxy connection
+    \item Call remote \texttt{upload\_file()} method
+    \item Display result to user
+\end{itemize}
+
+\subsection{Server Responsibilities}
+\begin{itemize}
+    \item Listen for RPC requests on specified port
+    \item Expose \texttt{upload\_file()} method
+    \item Decode Base64 data
+    \item Save file to disk
+    \item Return success/error message
+\end{itemize}
+
+\subsection{XML-RPC Framework Responsibilities}
+\begin{itemize}
+    \item Serialize method calls to XML
+    \item Handle HTTP transport
+    \item Deserialize XML responses
+    \item Manage network connections
+    \item Handle protocol-level errors
+\end{itemize}
+
+\section{Conclusion}
+
+\subsection{Advantages of RPC Approach}
+\begin{itemize}
+    \item \textbf{Higher abstraction}: Focus on business logic, not network details
+    \item \textbf{Simpler code}: ~20 lines vs ~30 lines in TCP version
+    \item \textbf{Easier to extend}: Just add more RPC methods
+    \item \textbf{Built-in error handling}: XML-RPC handles many edge cases
+    \item \textbf{Standard protocol}: Interoperable with other languages
+    \item \textbf{No custom protocol design}: Use proven XML-RPC standard
+\end{itemize}
+
+\subsection{Disadvantages of RPC Approach}
+\begin{itemize}
+    \item \textbf{Memory overhead}: Entire file loaded into memory and Base64 encoded
+    \item \textbf{No streaming}: Cannot transfer very large files efficiently
+    \item \textbf{XML overhead}: Larger payload size due to XML and Base64
+    \item \textbf{Less control}: Cannot optimize low-level network behavior
+    \item \textbf{Single point of failure}: One RPC call for entire transfer
+\end{itemize}
+
+\subsection{Lessons Learned}
+\begin{itemize}
+    \item Understanding RPC concepts and benefits
+    \item Learning XML-RPC protocol in Python
+    \item Comparing low-level (TCP) vs high-level (RPC) approaches
+    \item Base64 encoding for binary data in text-based protocols
+    \item Trade-offs between abstraction and control
+\end{itemize}
+
+\subsection{When to Use RPC vs TCP}
+\begin{itemize}
+    \item \textbf{Use RPC when}:
+        \begin{itemize}
+            \item Rapid development is priority
+            \item File sizes are moderate (< 100MB)
+            \item Need cross-language compatibility
+            \item Want to expose multiple operations
+        \end{itemize}
+    \item \textbf{Use TCP when}:
+        \begin{itemize}
+            \item Transferring very large files
+            \item Need maximum performance
+            \item Require streaming capability
+            \item Want full control over protocol
+        \end{itemize}
+\end{itemize}
+
+\subsection{Future Enhancements}
+\begin{itemize}
+    \item Implement chunked RPC transfer for large files
+    \item Add authentication and authorization
+    \item Use JSON-RPC instead of XML-RPC for efficiency
+    \item Add file compression before transfer
+    \item Implement progress callback mechanism
+    \item Add file listing and deletion RPC methods
+    \item Use gRPC for better performance
+\end{itemize}
+
+\end{document}

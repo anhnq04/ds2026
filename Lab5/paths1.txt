@@ -1,0 +1,5 @@
+/home/user/documents/project/src/main.py
+/home/user/documents/project/src/utils/helper.py
+/home/user/documents/project/tests/test_main.py
+/usr/local/bin/python3
+/etc/config/app.conf
